@@ -1,0 +1,262 @@
+28.07.2012
+==========
+
+$ sudo /sbin/insmod ./mod_params.ko iparam=3 sparam=zxcv aparam=5,4,3
+insmod: error inserting './mod_params.ko': -1 Operation not permitted
+
+$ dmesg | tail -n5
+========================================
+iparam = 3
+sparam = zxcv
+aparam [ 3 ] =  5  4  3
+========================================
+
+
+
+[olej@notebook parms]$ sudo insmod mod_params.ko
+insmod: error inserting 'mod_params.ko': -1 Operation not permitted
+
+[olej@notebook parms]$ dmesg | tail -n150 | grep -v ^audit
+========================================
+iparam = 0
+bparam = 0
+sparam = 
+aparam [ 5 ] =  0  0  0  0  0 
+========================================
+
+
+
+------------------------------------------------------------------------
+
+$ sudo /sbin/insmod ./mod_params.ko iparam=3 sparam=zxcv aparam=5,4,3,2,1,0
+insmod: error inserting './mod_params.ko': -1 Invalid parameters
+
+$ dmesg | tail -n2
+aparam: can only take 5 arguments
+mod_params: `5' invalid for parameter `aparam'
+
+------------------------------------------------------------------------
+
+$ sudo /sbin/insmod ./mod_params.ko iparam=qwerty
+insmod: error inserting './mod_params.ko': -1 Invalid parameters
+
+$ dmesg | tail -n1
+mod_params: `qwerty' invalid for parameter `iparam'
+
+------------------------------------------------------------------------
+
+[olej@notebook parms]$ sudo /sbin/insmod ./mod_params.ko
+insmod: error inserting './mod_params.ko': -1 Operation not permitted
+
+[olej@notebook parms]$ dmesg | tail -n150 | grep -v ^audit
+========================================
+iparam = 0
+nparam = 0
+sparam = 
+cparam =  {0}
+aparam [ 5 ] =  0  0  0  0  0 
+========================================
+
+[olej@notebook parms]$ sudo /sbin/insmod ./mod_params.ko iparam=3 nparam=4 sparam=str1 \
+cparam=str2 aparam=5,4,3
+insmod: error inserting './mod_params.ko': -1 Operation not permitted
+
+[olej@notebook parms]$ dmesg | tail -n50 | grep -v ^audit
+========================================
+iparam = 3
+nparam = 4
+sparam = str1
+cparam = str2 {4}
+aparam [ 3 ] =  5  4  3 
+========================================
+
+------------------------------------------------------------------------
+
+[olej@notebook parms]$ sudo /sbin/insmod ./mod_params.ko iparam=3 sparam=zxcv aparam=5,4,3,2,1,0
+insmod: error inserting './mod_params.ko': -1 Invalid parameters
+[olej@notebook parms]$ dmesg | tail -n20 | grep -v ^audit
+aparam: can only take 5 arguments
+mod_params: `5' invalid for parameter `aparam'
+
+[olej@notebook parms]$ sudo /sbin/insmod ./mod_params.ko zparam=3
+insmod: error inserting './mod_params.ko': -1 Unknown symbol in module
+[olej@notebook parms]$ dmesg | tail -n20 | grep -v ^audit
+mod_params: Unknown parameter `zparam'
+
+[olej@notebook parms]$ sudo /sbin/insmod ./mod_params.ko iparam=qwerty
+insmod: error inserting './mod_params.ko': -1 Invalid parameters
+[olej@notebook parms]$ dmesg | tail -n20 | grep -v ^audit
+mod_params: `qwerty' invalid for parameter `iparam'
+
+[olej@notebook parms]$ sudo /sbin/insmod ./mod_params.ko cparam=123456789
+insmod: error inserting './mod_params.ko': -1 No space left on device
+[olej@notebook parms]$ dmesg | tail -n20 | grep -v ^audit
+cparam: string doesn't fit in 4 chars.
+mod_params: `123456789' too large for parameter `cparam'
+
+
+------------------------------------------------------------------------
+
+
+
+[olej@notebook parms]$ sudo insmod mod_params.ko sparam=strparam
+insmod: error inserting 'mod_params.ko': -1 Operation not permitted
+
+[olej@notebook parms]$ dmesg | tail -n50 | grep -v ^audit
+========================================
+iparam = 0
+nparam = 0
+sparam = strparam
+cparam =  {0}
+aparam [ 5 ] =  0  0  0  0  0 
+========================================
+
+
+
+
+[olej@notebook parms]$ sudo insmod mod_params.ko sparam='переданный строчный параметр'
+insmod: error inserting 'mod_params.ko': -1 Unknown symbol in module
+
+[olej@notebook parms]$ dmesg | tail -n50 | grep -v ^audit
+mod_params: Unknown parameter `строчный'
+
+[olej@notebook parms]$ sudo insmod mod_params.ko sparam='new string parameter'
+insmod: error inserting 'mod_params.ko': -1 Unknown symbol in module
+
+[olej@notebook parms]$ dmesg | tail -n20 | grep -v ^audit
+mod_params: Unknown parameter `string'
+
+[olej@notebook parms]$ sudo insmod mod_params.ko sparam='new param'
+insmod: error inserting 'mod_params.ko': -1 Unknown symbol in module
+[olej@notebook parms]$ echo $?
+1
+
+
+[olej@notebook parms]$ sudo insmod mod_params.ko sparam='new'
+insmod: error inserting 'mod_params.ko': -1 Operation not permitted
+
+[olej@notebook parms]$ dmesg | tail -n30 | grep -v ^audit | grep sparam
+sparam = new
+
+
+------------------------------------------------------------------------
+
+[olej@notebook parms]$ sudo insmod mod_params.ko sparam='new'
+insmod: error inserting 'mod_params.ko': -10000 Success
+
+
+========================================================================
+
+01.04.2014
+==========
+
+bash-4.2$ sudo insmod ./mod_params.ko 
+[sudo] password for Olej: 
+insmod: ERROR: could not insert module ./mod_params.ko: Operation not permitted
+
+
+bash-4.2$ dmesg | tail -n9
+[14562.245488] mod_params: module verification failed: signature and/or  required key missing - tainting kernel
+[14562.245812] ========================================
+[14562.245816] iparam = 0
+[14562.245818] nparam = 0
+[14562.245820] bparam = 1
+[14562.245822] sparam = (null)
+[14562.245824] cparam =  {0}
+[14562.245828] aparam [ 5 ] =  0  0  0  0  0 
+[14562.245830] ========================================
+
+
+------------------------------------------------------------------------
+
+
+bash-4.2$ sudo insmod mod_params.ko iparam=3 nparam=4 bparam=1 sparam=str1 cparam=str2 aparam=5,4,3  
+insmod: ERROR: could not insert module mod_params.ko: Operation not permitted
+
+bash-4.2$ dmesg | tail -n9
+[14997.735962] mod_params: `false' invalid for parameter `bparam'
+[15049.389328] ========================================
+[15049.389336] iparam = 3
+[15049.389338] nparam = 4
+[15049.389340] bparam = 0
+[15049.389342] sparam = str1
+[15049.389345] cparam = str2 {4}
+[15049.389348] aparam [ 3 ] =  5  4  3 
+[15049.389350] ========================================
+
+
+------------------------------------------------------------------------
+
+
+bash-4.2$ sudo insmod mod_params.ko aparam=5,4,3,2,1,0
+[sudo] password for Olej: 
+insmod: ERROR: could not insert module mod_params.ko: Invalid parameters
+
+bash-4.2$ echo $?
+1
+
+bash-4.2$ dmesg | tail -n2
+[15583.285554] aparam: can only take 5 arguments
+[15583.285561] mod_params: `5' invalid for parameter `aparam'
+
+------------------------------------------------------------------------
+
+bash-4.2$ sudo insmod mod_params.ko ZZparam=3
+[sudo] password for Olej: 
+insmod: ERROR: could not insert module mod_params.ko: Operation not permitted
+
+bash-4.2$ dmesg | tail -n8
+[15966.050023] ========================================
+[15966.050026] iparam = 0
+[15966.050029] nparam = 0
+[15966.050031] bparam = 1
+[15966.050033] sparam = (null)
+[15966.050035] cparam =  {0}
+[15966.050039] aparam [ 5 ] =  0  0  0  0  0 
+[15966.050041] ========================================
+
+------------------------------------------------------------------------
+
+bash-4.2$ sudo /sbin/insmod ./mod_params.ko iparam=qwerty
+[sudo] password for Olej: 
+insmod: ERROR: could not insert module ./mod_params.ko: Invalid parameters
+
+bash-4.2$ dmesg | tail -n1
+[16625.270285] mod_params: `qwerty' invalid for parameter `iparam'
+
+------------------------------------------------------------------------
+
+
+bash-4.2$ sudo insmod mod_params.ko cparam=123456789
+[sudo] password for Olej: 
+insmod: ERROR: could not insert module mod_params.ko: No space left on device
+
+bash-4.2$ dmesg | tail -n2
+[16960.871302] cparam: string doesn't fit in 4 chars.
+[16960.871309] mod_params: `123456789' too large for parameter `cparam'
+
+
+========================================================================
+
+21.04.2014
+==========
+
+[Olej@modules parms]$ uname -a
+Linux modules.localdomain 3.13.10-200.fc20.x86_64 #1 SMP Mon Apr 14 20:34:16 UTC 2014 x86_64 x86_64 x86_64 GNU/Linux
+
+[Olej@modules parms]$ sudo insmod mod_params.ko iparam=3 nparam=4 bparam=1 sparam=str1 cparam=str2 aparam=5,4,3
+[sudo] password for Olej: 
+insmod: ERROR: could not insert module mod_params.ko: Operation not permitted
+
+[Olej@modules parms]$ dmesg | tail -n9
+[10088.452129] mod_params: module verification failed: signature and/or  required key missing - tainting kernel
+[10088.452337] ========================================
+[10088.452340] iparam = 3
+[10088.452342] nparam = 4
+[10088.452344] bparam = 0
+[10088.452345] sparam = str1
+[10088.452347] cparam = str2 {4}
+[10088.452349] aparam [ 3 ] =  5  4  3 
+[10088.452350] ========================================
+
+------------------------------------------------------------------------

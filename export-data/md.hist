@@ -1,0 +1,216 @@
+22.07.2012
+==========
+
+[olej@notebook TMP]$ pwd
+/home/olej/TMP
+
+[olej@notebook TMP]$ ls
+Makefile  md1.c  md1.ko  md2.c  md2.ko  md3.c  md3.ko  md.h  md.hist  Module.symvers
+
+[olej@notebook TMP]$ make
+make -C /lib/modules/2.6.32.9-70.fc12.i686.PAE/build M=/home/olej/TMP modules
+make[1]: Entering directory `/usr/src/kernels/2.6.32.9-70.fc12.i686.PAE'
+  CC [M]  /home/olej/TMP/md1.o
+/home/olej/TMP/md1.c:14: предупреждение: ‘md1_local’ определена, но нигде не используется
+  CC [M]  /home/olej/TMP/md2.o
+  CC [M]  /home/olej/TMP/md3.o
+  Building modules, stage 2.
+  MODPOST 3 modules
+  CC      /home/olej/TMP/md1.mod.o
+  LD [M]  /home/olej/TMP/md1.ko
+  CC      /home/olej/TMP/md2.mod.o
+  LD [M]  /home/olej/TMP/md2.ko
+  CC      /home/olej/TMP/md3.mod.o
+  LD [M]  /home/olej/TMP/md3.ko
+make[1]: Leaving directory `/usr/src/kernels/2.6.32.9-70.fc12.i686.PAE'
+
+[olej@notebook TMP]$ file md1.ko 
+md1.ko: ELF 32-bit LSB relocatable, Intel 80386, version 1 (SYSV), not stripped
+
+
+[olej@notebook TMP]$ sudo insmod md2.ko
+insmod: error inserting 'md2.ko': -1 Unknown symbol in module
+
+[olej@notebook TMP]$ dmesg | tail -n30 | grep md
+md2: Unknown symbol md1_data
+md2: Unknown symbol md1_proc
+
+----------------------------------------------------------------------------
+
+[olej@notebook TMP]$ sudo insmod md1.ko
+
+[olej@notebook TMP]$ sudo insmod md2.ko
+
+[olej@notebook TMP]$ lsmod | grep md
+md2                      646  0 
+md1                      860  1 md2
+
+[olej@notebook TMP]$ dmesg | tail -n60 | grep +
++ module md1 start!
++ module md2 start!
++ data string exported from md1 : Привет мир!
++ string returned md1_proc() is : Привет мир!
+
+
+[olej@notebook TMP]$ sudo cat /var/log/messages | tail -n150 | grep +
+Dec 17 20:08:03 notebook kernel: + module md1 start!
+Dec 17 20:08:09 notebook kernel: + module md2 start!
+Dec 17 20:08:09 notebook kernel: + data string exported from md1 : Привет мир!
+Dec 17 20:08:09 notebook kernel: + string returned md1_proc() is : Привет мир!
+
+
+[olej@notebook TMP]$ sudo rmmod md1
+ERROR: Module md1 is in use by md2
+
+[olej@notebook TMP]$ sudo rmmod md2
+
+[olej@notebook TMP]$ sudo rmmod md1
+
+[olej@notebook TMP]$ lsmod | grep md
+[olej@notebook TMP]$
+
+----------------------------------------------------------------------------
+
+[olej@notebook TMP]$ sudo insmod md1.ko
+[olej@notebook TMP]$ sudo insmod md2.ko
+[olej@notebook TMP]$ lsmod | grep md
+md2                      646  0 
+md1                      860  1 md2
+
+[olej@notebook TMP]$ cat /proc/kallsyms | grep '\[md'
+f8b19000 t md_exit	[md2]
+f8b190b8 d __this_module	[md2]
+f8b19000 t cleanup_module	[md2]
+f8ad7020 t md_exit	[md1]
+f8ad70a0 r __ksymtab_md1_proc	[md1]
+f8ad70b0 r __kstrtab_md1_proc	[md1]
+f8ad70a8 r __ksymtab_md1_data	[md1]
+f8ad70b9 r __kstrtab_md1_data	[md1]
+f8ad70cc D md1_data	[md1]
+f8ad70d0 d __this_module	[md1]
+f8ad7000 T md1_proc	[md1]
+f8ad7020 t cleanup_module	[md1]
+
+[olej@notebook TMP]$ cat /proc/kallsyms | grep ' md_init'
+c0a26edb t md_init
+
+
+[olej@notebook TMP]$ cat /proc/kallsyms | grep T | grep ' printk'
+c040bcd1 T printk_address
+c044136b T printk_needs_cpu
+c04415d8 T printk_timed_ratelimit
+c0441617 T printk_ratelimit
+c0441816 T printk_tick
+c07a3955 T printk
+c0a18664 T printk_all_partitions
+
+[olej@notebook TMP]$ cat /boot/System.map-`uname -r` | grep T | grep ' printk'
+c040bcd1 T printk_address
+c044136b T printk_needs_cpu
+c04415d8 T printk_timed_ratelimit
+c0441617 T printk_ratelimit
+c0441816 T printk_tick
+c07a3955 T printk
+c0a18664 T printk_all_partitions
+
+[olej@notebook TMP]$ cat /boot/System.map-`uname -r` | grep T | grep '\[md'
+[olej@notebook TMP]$ 
+
+----------------------------------------------------------------------------
+
+
+[olej@notebook TMP]$ nm md1.ko | grep ' md'
+00000000 D md1_data
+0000000f T md1_noexport
+00000000 T md1_proc
+00000000 t md_exit
+00000000 t md_init
+
+[olej@notebook TMP]$ nm md2.ko | grep ' md'
+         U md1_data
+         U md1_proc
+00000000 t md_exit
+00000000 t md_init
+
+[olej@notebook TMP]$ cat Module.symvers 
+0x00000000	md1_data	/home/olej/TMP/md1	EXPORT_SYMBOL
+0x00000000	md1_proc	/home/olej/TMP/md1	EXPORT_SYMBOL
+
+[olej@notebook TMP]$ cat /lib/modules/`uname -r`/build/Module.symvers | grep 'printk' 
+0x00000000	__snd_printk	sound/core/snd	EXPORT_SYMBOL_GPL
+0x00000000	__ftrace_vprintk	vmlinux	EXPORT_SYMBOL_GPL
+0x00000000	v4l_printk_ioctl	drivers/media/video/videodev	EXPORT_SYMBOL
+0x00000000	__ftrace_vbprintk	vmlinux	EXPORT_SYMBOL_GPL
+0x00000000	trace_vprintk	vmlinux	EXPORT_SYMBOL_GPL
+0x00000000	printk_timed_ratelimit	vmlinux	EXPORT_SYMBOL
+0x00000000	printk	vmlinux	EXPORT_SYMBOL
+0x00000000	drm_ut_debug_printk	drivers/gpu/drm/drm	EXPORT_SYMBOL
+0x00000000	cpufreq_debug_printk	vmlinux	EXPORT_SYMBOL
+0x00000000	__trace_bprintk	vmlinux	EXPORT_SYMBOL_GPL
+0x00000000	printk_ratelimit	vmlinux	EXPORT_SYMBOL
+0x00000000	__trace_printk	vmlinux	EXPORT_SYMBOL_GPL
+0x00000000	vprintk	vmlinux	EXPORT_SYMBOL
+0x00000000	trace_vbprintk	vmlinux	EXPORT_SYMBOL_GPL
+
+
+----------------------------------------------------------------------------
+
+[olej@nvidia TMP]$ uname -r
+2.6.35.14-96.fc14.i686.PAE
+
+[olej@nvidia TMP]$ sudo insmod md1.ko
+insmod: error inserting 'md1.ko': -1 Invalid module format
+
+[olej@nvidia TMP]$ dmesg | tail -n1
+[20168.420293] md1: version magic '2.6.32.9-70.fc12.i686.PAE SMP mod_unload 686 ' 
+should be '2.6.35.14-96.fc14.i686.PAE SMP mod_unload 686 '
+
+[olej@nvidia ~]$ lsmod | grep md1
+[olej@nvidia ~]$
+
+----------------------------------------------------------------------------
+
+[olej@notebook TMP]$ sudo insmod md3.ko
+insmod: error inserting 'md3.ko': -1 Operation not permitted
+
+[olej@notebook TMP]$ dmesg | tail -n60 | grep +
++ module md3 start!
++ data string exported from md1 : Привет мир!
++ string returned md1_proc() is : Привет мир!
+
+----------------------------------------------------------------------------
+
+[olej@notebook TMP]$ ls
+Makefile  md1.c  md1.ko  md2.c  md2.ko  md3.c  md3.ko  md.h  md.hist  Module.symvers
+
+[olej@notebook TMP]$ make disclean
+
+[olej@notebook TMP]$ ls
+Makefile  md1.c  md2.c  md3.c  md.h  md.hist
+
+============================================================================
+
+09.04.2014
+==========
+
+[Olej@modules export-data]$ make
+make -C /lib/modules/3.13.8-200.fc20.x86_64/build M=/home/Olej/2014-WORK/GlobalLogic/BOOK.Kernel.org/Kexamples.BOOK/tools/export-data modules
+make[1]: Вход в каталог `/usr/src/kernels/3.13.8-200.fc20.x86_64'
+  CC [M]  /home/Olej/2014-WORK/GlobalLogic/BOOK.Kernel.org/Kexamples.BOOK/tools/export-data/md1.o
+/home/Olej/2014-WORK/GlobalLogic/BOOK.Kernel.org/Kexamples.BOOK/tools/export-data/md1.c:14:14: предупреждение: «md1_local» определена, но нигде не используется [-Wunused-function]
+ static char* md1_local( void ) {
+              ^
+  CC [M]  /home/Olej/2014-WORK/GlobalLogic/BOOK.Kernel.org/Kexamples.BOOK/tools/export-data/md2.o
+  CC [M]  /home/Olej/2014-WORK/GlobalLogic/BOOK.Kernel.org/Kexamples.BOOK/tools/export-data/md3.o
+  Building modules, stage 2.
+  MODPOST 3 modules
+  CC      /home/Olej/2014-WORK/GlobalLogic/BOOK.Kernel.org/Kexamples.BOOK/tools/export-data/md1.mod.o
+  LD [M]  /home/Olej/2014-WORK/GlobalLogic/BOOK.Kernel.org/Kexamples.BOOK/tools/export-data/md1.ko
+  CC      /home/Olej/2014-WORK/GlobalLogic/BOOK.Kernel.org/Kexamples.BOOK/tools/export-data/md2.mod.o
+  LD [M]  /home/Olej/2014-WORK/GlobalLogic/BOOK.Kernel.org/Kexamples.BOOK/tools/export-data/md2.ko
+  CC      /home/Olej/2014-WORK/GlobalLogic/BOOK.Kernel.org/Kexamples.BOOK/tools/export-data/md3.mod.o
+  LD [M]  /home/Olej/2014-WORK/GlobalLogic/BOOK.Kernel.org/Kexamples.BOOK/tools/export-data/md3.ko
+make[1]: Выход из каталога `/usr/src/kernels/3.13.8-200.fc20.x86_64'
+
+----------------------------------------------------------------------------
+
