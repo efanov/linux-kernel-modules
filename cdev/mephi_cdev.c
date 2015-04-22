@@ -60,13 +60,14 @@ static const struct file_operations dev_fops = {
 };
 
 #define DEVICE_FIRST  0
+// Задаём количество младших номеров, которые можно использовать при создании специальных файлов
 #define DEVICE_COUNT  3
 #define MODNAME "mephi_cdev"
 
 static struct cdev mephi_cdev;
 
 /*
- * Функция загрузки модуля.
+ * Функция загрузки модуля
  */
 
 static int __init dev_init( void ) {
@@ -99,7 +100,7 @@ err:
 }
 
 /*
- * Функция выгрузки модуля.
+ * Функция выгрузки модуля
  */
 
 static void __exit dev_exit( void ) {
